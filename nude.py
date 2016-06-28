@@ -3,13 +3,13 @@
 
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
-
+import io
 import copy
 import math
-import sys
 import time
 from collections import namedtuple
 from PIL import Image
+from algorithm import classify_skin
 
 
 def is_nude(path_or_io):
@@ -24,7 +24,7 @@ class Nude(object):
     def __init__(self, path_or_io):
         if isinstance(path_or_io, Image.Image):
             self.image = path_or_io
-        elif isinstance(path_or_io, (str, file)):
+        elif isinstance(path_or_io, (str, io.IOBase)):
             self.image = Image.open(path_or_io)
         else:
             self.image = path_or_io
@@ -94,7 +94,7 @@ class Nude(object):
                 b = pixels[x, y][2]   # blue
                 _id = x + y * self.width + 1
 
-                if not self._classify_skin(r, g, b):
+                if not classify_skin(r, g, b):
                     self.skin_map.append(self.Skin(_id, False, 0, x, y, False))
                 else:
                     self.skin_map.append(self.Skin(_id, True, 0, x, y, False))
@@ -278,91 +278,6 @@ class Nude(object):
         self.message = "Nude!!"
         self.result = True
         return self.result
-
-    # A Survey on Pixel-Based Skin Color Detection Techniques
-    def _classify_skin(self, r, g, b):
-        rgb_classifier = r > 95 and \
-            g > 40 and g < 100 and \
-            b > 20 and \
-            max([r, g, b]) - min([r, g, b]) > 15 and \
-            abs(r - g) > 15 and \
-            r > g and \
-            r > b
-
-        nr, ng, nb = self._to_normalized(r, g, b)
-        norm_rgb_classifier = nr / ng > 1.185 and \
-            float(r * b) / ((r + g + b) ** 2) > 0.107 and \
-            float(r * g) / ((r + g + b) ** 2) > 0.112
-
-        # TODO: Add normalized HSI, HSV, and a few non-parametric skin models too
-
-        h, s, v = self._to_hsv(r, g, b)
-        hsv_classifier = h > 0 and \
-            h < 35 and \
-            s > 0.23 and \
-            s < 0.68
-
-        y, cb, cr = self._to_ycbcr(r, g,  b)
-        # Based on this paper http://research.ijcaonline.org/volume94/number6/pxc3895695.pdf
-        ycbcr_classifier = 97.5 <= cb <= 142.5 and 134 <= cr <= 176
-
-        nh, ns, nv = self._to_normalized(h, s, v)
-        # norm_hsv_classifier =
-        # ycc doesn't work
-        return rgb_classifier or norm_rgb_classifier or hsv_classifier or ycbcr_classifier
-
-    def _to_normalized_hsv(self, h, s, v):
-        if h == 0:
-            h = 0.0001
-        if s == 0:
-            s = 0.0001
-        if v == 0:
-            v = 0.0001
-        _sum = float(h + s + v)
-        return [h / 360.0, s / 100.0, v / 100.0]
-
-    def _to_normalized(self, r, g, b):
-        if r == 0:
-            r = 0.0001
-        if g == 0:
-            g = 0.0001
-        if b == 0:
-            b = 0.0001
-        _sum = float(r + g + b)
-        return [r / _sum, g / _sum, b / _sum]
-
-    def _to_ycbcr(self, r, g, b):
-        # Copied from here.
-        # http://stackoverflow.com/questions/19459831/rgb-to-ycbcr-conversion-problems
-        y = .299*r + .587*g + .114*b
-        cb = 128 - 0.168736*r - 0.331364*g + 0.5*b
-        cr = 128 + 0.5*r - 0.418688*g - 0.081312*b
-        return y, cb, cr
-
-    def _to_hsv(self, r, g, b):
-        h = 0
-        _sum = float(r + g + b)
-        _max = float(max([r, g, b]))
-        _min = float(min([r, g, b]))
-        diff = float(_max - _min)
-        if _sum == 0:
-            _sum = 0.0001
-
-        if _max == r:
-            if diff == 0:
-                h = sys.maxsize
-            else:
-                h = (g - b) / diff
-        elif _max == g:
-            h = 2 + ((g - r) / diff)
-        else:
-            h = 4 + ((r - g) / diff)
-
-        h *= 60
-        if h < 0:
-            h += 360
-
-        return [h, 1.0 - (3.0 * (_min / _sum)), (1.0 / 3.0) * _max]
 
 
 def _testfile(fname, resize=False):
