@@ -31,7 +31,9 @@ cdef bint rgb_classifier(int r, int g, int b):
 
 cdef bint norm_rgb_classifier(int r, int g, int b):
     cdef bint result
-    cdef float _sum, dr, dg, db
+    cdef double _sum, dr, dg, db
+    cdef double nr, ng, nb
+    dr, dg, db = r, g, b
     if r == 0:
         dr = 0.0001
     if g == 0:
@@ -40,39 +42,43 @@ cdef bint norm_rgb_classifier(int r, int g, int b):
         db = 0.0001
     _sum = dr + dg + db
     nr, ng, nb = dr / _sum, dg / _sum, db / _sum
-    result = nr / ng > 1.185 \
-             and float(r * b) / ((r + g + b) ** 2) > 0.107 \
-             and float(r * g) / ((r + g + b) ** 2) > 0.112
+    result = (nr / ng) > 1.185 \
+             and (float(r * b) / ((r + g + b) ** 2)) > 0.107 \
+             and (float(r * g) / ((r + g + b) ** 2)) > 0.112
     return result
 
 
 cdef bint hsv_classifier(int r, int g, int b):
+
     cdef bint result
-    cdef int _max, _min
-    cdef float _sum
-    cdef float h = 0
+    cdef int _max, _min, _sum, diff
+    cdef double _dsum, _dmin, _dmax, ddiff
+    cdef double s, v
+    cdef double h = 0
     _sum = r + g + b
     _max = max(r, g, b)
     _min = min(r, g, b)
     diff = _max - _min
+
+    _dsum, _dmin, _dmax, ddiff= _sum, _min, _max, diff
     if _sum == 0:
-        _sum = 0.0001
+        _dsum = 0.0001
 
     if _max == r:
         if diff == 0:
             h = sys.maxsize
         else:
-            h = (g - b) / diff
+            h = (g - b) / ddiff
     elif _max == g:
-        h = 2 + ((g - r) / diff)
+        h = 2 + ((g - r) / ddiff)
     else:
-        h = 4 + ((r - g) / diff)
+        h = 4 + ((r - g) / ddiff)
 
     h *= 60
     if h < 0:
         h += 360
 
-    s, v = 1.0 - (3.0 * (_min / _sum)), (1.0 / 3.0) * _max
+    s, v = 1.0 - (3.0 * (_dmin / _dsum)), (1.0 / 3.0) * _dmax
     result = 0 < h < 35 and 0.23 < s < 0.68
     return result
 
@@ -81,7 +87,7 @@ cdef bint ycbcr_classifier(int r, int g, int b):
     # Copied from here.
     # http://stackoverflow.com/questions/19459831/rgb-to-ycbcr-conversion-problems
     cdef bint result
-    cdef float y, cb, cr
+    cdef double y, cb, cr
     y = 0.299 * r + 0.587 * g + 0.114 * b
     cb = 128 - 0.168736 * r - 0.331364 * g + 0.5 * b
     cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b
