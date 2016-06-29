@@ -7,7 +7,6 @@ import io
 import copy
 import math
 import time
-from collections import namedtuple
 from PIL import Image
 from algorithm import classify_skin
 
@@ -18,9 +17,6 @@ def is_nude(path_or_io):
 
 
 class Nude(object):
-
-    # Skin = namedtuple("Skin", "id skin region x y checked")
-    # Skin = namedtuple("Skin", ('id', 'skin', 'region',  'x', 'y', 'checked'))
 
     class Skin:
         __slots__ = ['id', 'skin', 'region',  'x', 'y', 'checked']
