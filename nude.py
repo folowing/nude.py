@@ -19,7 +19,22 @@ def is_nude(path_or_io):
 
 class Nude(object):
 
-    Skin = namedtuple("Skin", "id skin region x y checked")
+    # Skin = namedtuple("Skin", "id skin region x y checked")
+    # Skin = namedtuple("Skin", ('id', 'skin', 'region',  'x', 'y', 'checked'))
+
+    class Skin:
+        __slot__ = ['id', 'skin', 'region',  'x', 'y', 'checked']
+
+        def __init__(self, id, skin, region, x, y, checked):
+            self.id = id
+            self.skin = skin
+            self.region = region
+            self.x = x
+            self.y = y
+            self.checked = checked
+
+        def replace(self, region):
+            return self.__class__(self.id, self.skin, region, self.x, self.y, self.checked)
 
     def __init__(self, path_or_io):
         if isinstance(path_or_io, Image.Image):
@@ -121,7 +136,8 @@ class Nude(object):
                             checker = True
 
                     if not checker:
-                        _skin = self.skin_map[_id - 1]._replace(region=len(self.detected_regions))
+                        # _skin = self.skin_map[_id - 1]._replace(region=len(self.detected_regions))
+                        _skin = self.skin_map[_id - 1].replace(len(self.detected_regions))
                         self.skin_map[_id - 1] = _skin
                         self.detected_regions.append([self.skin_map[_id - 1]])
                         continue
@@ -131,7 +147,8 @@ class Nude(object):
                                 self.detected_regions[region]
                             except IndexError:
                                 self.detected_regions.append([])
-                            _skin = self.skin_map[_id - 1]._replace(region=region)
+                            # _skin = self.skin_map[_id - 1]._replace(region=region)
+                            _skin = self.skin_map[_id - 1].replace(region)
                             self.skin_map[_id - 1] = _skin
                             self.detected_regions[region].append(self.skin_map[_id - 1])
 
