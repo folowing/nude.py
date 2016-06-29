@@ -23,7 +23,7 @@ class Nude(object):
     # Skin = namedtuple("Skin", ('id', 'skin', 'region',  'x', 'y', 'checked'))
 
     class Skin:
-        __slot__ = ['id', 'skin', 'region',  'x', 'y', 'checked']
+        __slots__ = ['id', 'skin', 'region',  'x', 'y', 'checked']
 
         def __init__(self, id, skin, region, x, y, checked):
             self.id = id
